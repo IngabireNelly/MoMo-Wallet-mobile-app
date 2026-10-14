@@ -1,3 +1,4 @@
+import 'cash_out_screen.dart';
 import 'send_screen.dart';
 import 'package:flutter/material.dart';
 import 'transaction.dart';
@@ -45,19 +46,42 @@ class _WalletScreenState extends State<WalletScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('4MoMo Wallet')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SendScreen(wallet: wallet),
-            ),
-          ).then((_) {
-            setState(() {});
-          });
-        },
-        label: const Text('Send money'),
-        icon: const Icon(Icons.send),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'send',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SendScreen(wallet: wallet),
+                ),
+              ).then((_) {
+                setState(() {});
+              });
+            },
+            label: const Text('Send money'),
+            icon: const Icon(Icons.send),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'cashout',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CashOutScreen(wallet: wallet),
+                ),
+              ).then((_) {
+                setState(() {});
+              });
+            },
+            label: const Text('Cash out'),
+            icon: const Icon(Icons.local_atm),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
