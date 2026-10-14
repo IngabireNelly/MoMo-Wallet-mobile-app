@@ -1,3 +1,4 @@
+import 'send_screen.dart';
 import 'package:flutter/material.dart';
 import 'transaction.dart';
 import 'wallet.dart';
@@ -44,6 +45,20 @@ class _WalletScreenState extends State<WalletScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('4MoMo Wallet')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SendScreen(wallet: wallet),
+            ),
+          ).then((_) {
+            setState(() {});
+          });
+        },
+        label: const Text('Send money'),
+        icon: const Icon(Icons.send),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
