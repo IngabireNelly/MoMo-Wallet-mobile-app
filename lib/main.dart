@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'wallet_screen.dart';
 
 void main() {
   runApp(const MaterialApp(
-    home: Scaffold(
-      body: Center(child: Text('4MoMo Wallet - rules are ready')),
-    ),
+    debugShowCheckedModeBanner: false,
+    home: WalletScreen(),
   ));
 }
