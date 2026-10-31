@@ -21,7 +21,7 @@ class _CashOutScreenState extends State<CashOutScreen> {
     super.dispose();
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
     final amount = parseWholeNumber(amountController.text);
     if (amount == null) {
       setState(() {
@@ -30,13 +30,15 @@ class _CashOutScreenState extends State<CashOutScreen> {
       return;
     }
 
-    final result = widget.wallet.cashOut(amount);
+    final result = await widget.wallet.cashOut(amount);
     if (result != null) {
       setState(() {
         error = result;
       });
       return;
     }
+
+    if (!mounted) return;
 
     Navigator.pop(context);
   }

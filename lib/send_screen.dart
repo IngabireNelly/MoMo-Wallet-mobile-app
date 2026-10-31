@@ -22,7 +22,7 @@ class _SendScreenState extends State<SendScreen> {
     super.dispose();
   }
 
-  void _send() {
+  Future<void> _send() async {
     final amount = parseWholeNumber(amountController.text);
     if (amount == null) {
       setState(() {
@@ -31,13 +31,15 @@ class _SendScreenState extends State<SendScreen> {
       return;
     }
 
-    final result = widget.wallet.send(phoneController.text, amount);
+    final result = await widget.wallet.send(phoneController.text, amount);
     if (result != null) {
       setState(() {
         error = result;
       });
       return;
     }
+
+    if (!mounted) return;
 
     Navigator.pop(context);
   }

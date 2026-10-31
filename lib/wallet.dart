@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'transaction.dart';
 
 const List<int> noteValues = [5000, 2000, 1000, 500, 100];
@@ -63,20 +64,13 @@ int _lowestOf(List<Transaction> items) {
 }
 
 class Wallet {
+  Wallet(this._history);
+
   static const int openingBalance = 10000;
+  static Transaction? _lastDeleted;
 
-  // Stored oldest first. The screen shows newestFirst.
-  final List<Transaction> _history = [
-    const Transaction(id: 1, description: 'Received from Aline', amount: 3000, direction: Direction.incoming),
-    const Transaction(id: 2, description: 'Sent to 0788123456', amount: 1500, direction: Direction.outgoing),
-    const Transaction(id: 3, description: 'Cash out', amount: 800, direction: Direction.outgoing),
-    const Transaction(id: 4, description: 'Received from Jean', amount: 2500, direction: Direction.incoming),
-    const Transaction(id: 5, description: 'Sent to 0791234567', amount: 200, direction: Direction.outgoing),
-  ];
-
-  int _nextId = 6;
-  Transaction? _lastDeleted;
-  int _lastDeletedPosition = 0;
+  // Oldest first. The screen shows newestFirst.
+  final List<Transaction> _history;
 
   List<Transaction> get newestFirst => _history.reversed.toList();
 
@@ -84,49 +78,49 @@ class Wallet {
 
   int get totalIn => _history
       .where((t) => t.direction == Direction.incoming)
-      .fold(0, (sum, t) => sum + t.amount);
+      .fold(0, (total, t) => total + t.amount);
 
   int get totalOut => _history
       .where((t) => t.direction == Direction.outgoing)
-      .fold(0, (sum, t) => sum + t.amount);
+      .fold(0, (total, t) => total + t.amount);
 
   int get lowestBalance => _lowestOf(_history);
 
-  void _add(String description, int amount, Direction direction) {
-    _history.add(Transaction(
-      id: _nextId++,
-      description: description,
-      amount: amount,
-      direction: direction,
-    ));
+  Future<void> _add(String description, int amount, Direction direction) {
+    final t = Transaction(
+        description: description, amount: amount, direction: direction);
+    return myTransactions().add({
+      ...t.toMap(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 
-  String? addIncoming(int amount, String description) {
+  Future<String?> addIncoming(int amount, String description) async {
     if (description.trim().isEmpty) return 'Description cannot be empty';
     if (amount <= 0) return 'Amount must be a whole number above 0';
-    _add(description.trim(), amount, Direction.incoming);
+    await _add(description.trim(), amount, Direction.incoming);
     return null;
   }
 
-  String? send(String phone, int amount) {
+  Future<String?> send(String phone, int amount) async {
     final phoneError = checkPhone(phone);
     if (phoneError != null) return phoneError;
     if (amount < 100) return 'Send at least 100 RWF';
     if (amount > balance) return 'Insufficient balance';
-    _add('Sent to ${phone.trim()}', amount, Direction.outgoing);
+    await _add('Sent to ${phone.trim()}', amount, Direction.outgoing);
     return null;
   }
 
-  String? cashOut(int amount) {
+  Future<String?> cashOut(int amount) async {
     if (splitIntoNotes(amount) == null) {
       return 'Amount must be a multiple of 100 (for example 500 or 1000)';
     }
     if (amount > balance) return 'Insufficient balance';
-    _add('Cash out', amount, Direction.outgoing);
+    await _add('Cash out', amount, Direction.outgoing);
     return null;
   }
 
-  String? delete(int id) {
+  Future<String?> delete(String id) async {
     final position = _history.indexWhere((t) => t.id == id);
     if (position == -1) return 'Transaction not found';
 
@@ -135,15 +129,21 @@ class Wallet {
       return 'Cannot delete: the balance would go below 0';
     }
 
-    _lastDeleted = _history.removeAt(position);
-    _lastDeletedPosition = position;
+    _lastDeleted = _history[position];
+    await myTransactions().doc(id).delete();
     return null;
   }
 
-  void undoDelete() {
+  // Undo = write the same data back with doc(id).set(...)
+  Future<void> undoDelete() async {
     final t = _lastDeleted;
     if (t == null) return;
-    _history.insert(_lastDeletedPosition, t);
     _lastDeleted = null;
+    await myTransactions().doc(t.id).set({
+      ...t.toMap(),
+      'createdAt': t.createdAt != null
+          ? Timestamp.fromDate(t.createdAt!)
+          : FieldValue.serverTimestamp(),
+    });
   }
 }
